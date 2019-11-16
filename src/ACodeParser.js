@@ -31,8 +31,11 @@ class ACodeParser extends React.Component {
 
   // Return a proper array of JSX objects with spaces replinished
   // Meant to undo the horror I wrought upon the innocent code string
-  restoreSpace(codeStr) {
+  restoreSpace(codeStr, inputObj=false) {
     let arr = codeStr.split("");
+    
+    let tempObj
+    inputObj ? tempObj = inputObj : tempObj = this.tempObj
 
     let arrMap = [];
     let char;
@@ -49,7 +52,7 @@ class ACodeParser extends React.Component {
 
     // No
     for (let i = 0; i < arrMap.length; i++) {
-      (arrMap[i] === 0) ? output.push(aSpace()) : output.push(this.tempObj[i]);
+      (arrMap[i] === 0) ? output.push(aSpace()) : output.push(tempObj[i]);
     }
 
     return output;
@@ -85,9 +88,13 @@ class ACodeParser extends React.Component {
         case "dot":
           return <syn className="dot">.</syn>;
         case "lsq":
-          return <syn className="sq">{"\["}</syn>;
+          return <syn className="sq">[</syn>;
         case "rsq":
-          return <syn className="sq">{"\]"}</syn>;
+          return <syn className="sq">]</syn>;
+        case "eq":
+          return <syn className="eq">=</syn>;
+        case "plus":
+          return <syn className="plus">+</syn>;
       }
     }
   }
@@ -174,12 +181,28 @@ class ACodeParser extends React.Component {
                 break;
               case "}":
                 output.push(this.addTag("rbrack"));
+                break;
               case ".":
                 output.push(this.addTag("dot"));
-              case "\[":
+                break;
+              case "[":
                 output.push(this.addTag('lsq'));
-              case "\]":
+                break;
+              case "]":
                 output.push(this.addTag('rsq'));
+                break;
+              case "=":
+                output.push(this.addTag('eq'));
+                break;
+              case "+":
+                output.push(this.addTag('plus'));
+                break;
+              case "'":
+                output.push(this.addTag('squote'));
+                break;
+              case '"':
+                output.push(this.addTag('dquote'));
+                break;
               default:
                 // currently changes everything to semicolons, correct this later
                 output.push(this.addTag("semic"));
@@ -189,7 +212,7 @@ class ACodeParser extends React.Component {
         }
       }
       spaces++;
-      //output.push(" ");
+      output.push(" ");
     }
 
     //console.log(spaces);
@@ -198,9 +221,12 @@ class ACodeParser extends React.Component {
 
   aNiceJSXObject(someCode) {
     let theObj;
+    let another;
     this.unfckObj(this.formatToJSX(someCode));
-    theObj = this.restoreSpace(someCode);
-    return theObj;
+    //another = this.formatToJSX(someCode);
+    //theObj = this.restoreSpace(someCode);
+    //return theObj;
+    return this.tempObj;
   }
 
   render() {
