@@ -19,7 +19,7 @@ class ACodeParser extends React.Component {
 
     this.tempObj = [];
     this.formatToJSX = this.formatToJSX.bind(this);
-    this.aNiceJSXObject = this.aNiceJSXObject.bind(this);
+    this.aNiceJSXArray = this.aNiceJSXArray.bind(this);
   }
 
   // Give us a clean array of JSX objects
@@ -31,30 +31,22 @@ class ACodeParser extends React.Component {
 
   // Return a proper array of JSX objects with spaces replinished
   // Meant to undo the horror I wrought upon the innocent code string
-  restoreSpace(codeStr, inputObj=false) {
-    let arr = codeStr.split("");
-    
-    let tempObj
-    inputObj ? tempObj = inputObj : tempObj = this.tempObj
-
-    let arrMap = [];
-    let char;
-    let aSpace = () => <div className="space">-</div>;
-
-    // Init with buffer?
+  // This is pretty terrible itself though
+  restoreSpace(codeStr, inputObj = false) {
     let output = [];
+    let tempObj
+    inputObj ? tempObj = inputObj : tempObj = this.tempObj;
 
-    // Create binary map
-    // This isn't necessary 
-    for (let i = 0; i < arr.length; i++) {
-      arr[i].match(/\s/) ? arrMap.push(0) : arrMap.push(1);
+    let aSpace = () => <syn className="space">{" "}</syn>;
+
+    for (let i = 0; i < inputObj.length; i++) {
+      if (inputObj[i].props != undefined) {
+        inputObj[i].props.className === "func" ? output.push(inputObj[i]) :
+          output.push(inputObj[i], aSpace())
+      } else {
+        output.push(inputObj[i], aSpace());
+      }  
     }
-
-    // No
-    for (let i = 0; i < arrMap.length; i++) {
-      (arrMap[i] === 0) ? output.push(aSpace()) : output.push(tempObj[i]);
-    }
-
     return output;
   }
 
@@ -130,7 +122,7 @@ class ACodeParser extends React.Component {
           output.push(this.addTag(false, "variable", word));
         }
 
-        // output.push(" ");
+        //output.push(" ");
         // Matches words preceding symbols
       } else if (
         codeArr[i].match(/^\w*(?=\W)/) != "" &&
@@ -211,34 +203,33 @@ class ACodeParser extends React.Component {
           }
         }
       }
-      spaces++;
-      output.push(" ");
+      //output.push(" ");
     }
 
     //console.log(spaces);
     return output;
   }
 
-  aNiceJSXObject(someCode) {
+  aNiceJSXArray(someCode) {
     let theObj;
     let another;
-    this.unfckObj(this.formatToJSX(someCode));
-    //another = this.formatToJSX(someCode);
-    //theObj = this.restoreSpace(someCode);
-    //return theObj;
-    return this.tempObj;
+
+    another = this.formatToJSX(someCode);
+    theObj = this.restoreSpace(someCode, another);
+    return theObj;
+    //return this.tempObj;
   }
 
   render() {
     let someCode =
-      `temp = codeArr[i].match(/^\W/)[0];` +
-      `codeArr[i] = codeArr[i].replace(/^\W/, "");` +
-      `temp = temp + " " + codeArr[i];` +
-      `output.push(this.formatToJSX(temp))`;
+      `temp = codeArr[i].match(/^\W/)[0]; ` +
+      `codeArr[i] = codeArr[i].replace(/^\W/, ""); ` +
+      `temp = temp + " " + codeArr[i]; ` +
+      `output.push(this.formatToJSX(temp)) `;
 
     return (
       <div className="theCode">
-        {this.aNiceJSXObject(someCode)} <br></br>
+        {this.aNiceJSXArray(someCode)} <br></br>
         <NeatStuff />
       </div>
     );
