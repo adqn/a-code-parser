@@ -1,6 +1,7 @@
 import React from 'react';
 import NeatStuff from './NeatStuff'
 import './css/syntax.css';
+import { AST_PropAccess } from 'terser';
 
 let Muh = {
   keywords: [
@@ -18,6 +19,7 @@ class ACodeParser extends React.Component {
     //this.state = { code: props.code.split(" ") }
 
     this.tempObj = [];
+    this.theObj = [];
     this.formatToJSX = this.formatToJSX.bind(this);
     this.aNiceJSXArray = this.aNiceJSXArray.bind(this);
   }
@@ -32,7 +34,7 @@ class ACodeParser extends React.Component {
   // Return a proper array of JSX objects with spaces replinished
   // Meant to undo the horror I wrought upon the innocent code string
   // This is pretty terrible itself though
-  restoreSpace(codeStr, inputObj = false) {
+  restoreSpace(inputObj = false) {
     let output = [];
     let tempObj
     inputObj ? tempObj = inputObj : tempObj = this.tempObj;
@@ -41,6 +43,7 @@ class ACodeParser extends React.Component {
 
     for (let i = 0; i < inputObj.length; i++) {
       if (inputObj[i].props != undefined) {
+        // Not necessarily functions, just objects of the form "word$symbols"
         inputObj[i].props.className === "func" ? output.push(inputObj[i]) :
           output.push(inputObj[i], aSpace())
       } else {
@@ -58,11 +61,15 @@ class ACodeParser extends React.Component {
           return <syn className="if">{word}</syn>;
         case "func":
           return <syn className="func">{word}</syn>;
+        case "comm":
+          return <syn className="comm">{word}</syn>;
         default:
           return <syn className="default">{word}</syn>;
       }
     } else {
       switch (token) {
+        case "comm":
+          return <syn className="comm">//</syn>;
         case "semic":
           return <syn className="semic">;</syn>;
         case "lparen":
@@ -98,107 +105,125 @@ class ACodeParser extends React.Component {
     let word;
     let symbols;
     let keyfound;
-    let spaces = 0;
+    let commentFound = false;
 
     // JSX objects pushed to here in order
     let output = [];
-
+    
     for (let i = 0; i < codeArr.length; i++) {
-      // Matches isolated words
-      if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
-        keyfound = false;
-        word = codeArr[i];
+      // Handle newlines, also terminate comment on newline, obviously
+      if (codeArr[i].match("\n")) {
+        codeArr[i] = codeArr[i].replace("\n", "");
+        commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
+          output.push(this.formatToJSX(codeArr[i]));
+        output.push(<br></br>);
+        commentFound = false;
+      }
+      // It does this while commentFound <-
+      else if (commentFound) {
+        output.push(this.addTag(false, "comm", codeArr[i]));
+      }
+      // It flips commentFound if it found this <-
+      else if (codeArr[i].match("//")) { 
+        commentFound = true;
+        output.push(this.addTag('comm'));
+      } else {
+        // Matches isolated words
+        if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
+          keyfound = false;
+          word = codeArr[i];
 
-        // Assign <syn> tag depending on keyword, var name, etc.
-        for (let j = 0; j < Muh.keywords.length; j++) {
-          if (word === Muh.keywords[j]) {
-            // temporarily give all keywords "if" tag
-            keyfound = true;
-            output.push(this.addTag(false, "if", word));
+          // Assign <syn> tag depending on keyword, var name, etc.
+          for (let j = 0; j < Muh.keywords.length; j++) {
+            if (word === Muh.keywords[j]) {
+              // temporarily give all keywords "if" tag
+              keyfound = true;
+              output.push(this.addTag(false, "if", word));
+            }
           }
-        }
-        // not a keyword
-        if (!keyfound) {
-          output.push(this.addTag(false, "variable", word));
-        }
+          // not a keyword
+          if (!keyfound) {
+            output.push(this.addTag(false, "variable", word));
+          }
 
-        //output.push(" ");
-        // Matches words preceding symbols
-      } else if (
-        codeArr[i].match(/^\w*(?=\W)/) != "" &&
-        codeArr[i].match(/^\w*(?=\W)/) != null
-      ) {
-        word = codeArr[i].match(/^\w*/)[0];
-        output.push(this.addTag(false, "func", word));
-        codeArr[i] = codeArr[i].replace(/^\w*/, "");
-        output.push(this.formatToJSX(codeArr[i]));
+          //output.push(" ");
+          // Matches words preceding symbols
+        } else if (
+          codeArr[i].match(/^\w*(?=\W)/) != "" &&
+          codeArr[i].match(/^\w*(?=\W)/) != null
+        ) {
+          word = codeArr[i].match(/^\w*/)[0];
+          output.push(this.addTag(false, "func", word));
+          codeArr[i] = codeArr[i].replace(/^\w*/, "");
+          output.push(this.formatToJSX(codeArr[i]));
 
-        // Matches symbols
-      } else if (codeArr[i].match(/^\W/)) {
-        // Multiple symbols
-        // Decompose and send back
-        if (codeArr[i].match(/^\W{2,}/)) {
-          symbols = codeArr[i]
-            .match(/^\W{2,}/)[0]
-            .split("")
-            .join(" ");
-          codeArr[i] = codeArr[i].replace(/^\W{2,}/, "");
-          symbols = symbols + " " + codeArr[i];
-          output.push(this.formatToJSX(symbols));
+          // Matches symbols
+        } else if (codeArr[i].match(/^\W/)) {
+          // Multiple symbols
+          // Decompose and send back
+          if (codeArr[i].match(/^\W{2,}/)) {
+            symbols = codeArr[i]
+              .match(/^\W{2,}/)[0]
+              .split("")
+              .join(" ");
+            codeArr[i] = codeArr[i].replace(/^\W{2,}/, "");
+            symbols = symbols + " " + codeArr[i];
+            output.push(this.formatToJSX(symbols));
 
-          // Decompose
-        } else {
-          // Single symbols followed by alphanumeric character
-          if (codeArr[i].match(/^\W(?=\w)/)) {
-            temp = codeArr[i].match(/^\W/)[0];
-            codeArr[i] = codeArr[i].replace(/^\W/, "");
-            temp = temp + " " + codeArr[i];
-            output.push(this.formatToJSX(temp));
-
-            // Singleton symbols processed here
-            // Assign a JSX object to each non-alphanumeric symbol
+            // Decompose
           } else {
-            switch (codeArr[i]) {
-              case ";":
-                output.push(this.addTag("semic"));
-                break;
-              case "(":
-                output.push(this.addTag("lparen"));
-                break;
-              case ")":
-                output.push(this.addTag("rparen"));
-                break;
-              case "{":
-                output.push(this.addTag("lbrack"));
-                break;
-              case "}":
-                output.push(this.addTag("rbrack"));
-                break;
-              case ".":
-                output.push(this.addTag("dot"));
-                break;
-              case "[":
-                output.push(this.addTag('lsq'));
-                break;
-              case "]":
-                output.push(this.addTag('rsq'));
-                break;
-              case "=":
-                output.push(this.addTag('eq'));
-                break;
-              case "+":
-                output.push(this.addTag('plus'));
-                break;
-              case "'":
-                output.push(this.addTag('squote'));
-                break;
-              case '"':
-                output.push(this.addTag('dquote'));
-                break;
-              default:
-                // currently changes everything to semicolons, correct this later
-                output.push(this.addTag("semic"));
-                break;
+            // Single symbols followed by alphanumeric character
+            if (codeArr[i].match(/^\W(?=\w)/)) {
+              temp = codeArr[i].match(/^\W/)[0];
+              codeArr[i] = codeArr[i].replace(/^\W/, "");
+              temp = temp + " " + codeArr[i];
+              output.push(this.formatToJSX(temp));
+
+              // Singleton symbols processed here
+              // Assign a JSX object to each non-alphanumeric symbol
+            } else {
+              switch (codeArr[i]) {
+                case ";":
+                  output.push(this.addTag("semic"));
+                  break;
+                case "(":
+                  output.push(this.addTag("lparen"));
+                  break;
+                case ")":
+                  output.push(this.addTag("rparen"));
+                  break;
+                case "{":
+                  output.push(this.addTag("lbrack"));
+                  break;
+                case "}":
+                  output.push(this.addTag("rbrack"));
+                  break;
+                case ".":
+                  output.push(this.addTag("dot"));
+                  break;
+                case "[":
+                  output.push(this.addTag('lsq'));
+                  break;
+                case "]":
+                  output.push(this.addTag('rsq'));
+                  break;
+                case "=":
+                  output.push(this.addTag('eq'));
+                  break;
+                case "+":
+                  output.push(this.addTag('plus'));
+                  break;
+                case "'":
+                  output.push(this.addTag('squote'));
+                  break;
+                case '"':
+                  output.push(this.addTag('dquote'));
+                  break;
+                default:
+                  // currently changes everything to semicolons, correct this later
+                  output.push(this.addTag("semic"));
+                  break;
+              }
             }
           }
         }
@@ -213,24 +238,66 @@ class ACodeParser extends React.Component {
   aNiceJSXArray(someCode) {
     let theObj;
     let another;
-
     another = this.formatToJSX(someCode);
-    theObj = this.restoreSpace(someCode, another);
-    return theObj;
+    theObj = this.restoreSpace(another);
+    this.theObj = theObj;
     //return this.tempObj;
   }
 
   render() {
+    // Pretty much all prints except tabs and regexes
     let someCode =
-      `temp = codeArr[i].match(/^\W/)[0]; ` +
-      `codeArr[i] = codeArr[i].replace(/^\W/, ""); ` +
-      `temp = temp + " " + codeArr[i]; ` +
-      `output.push(this.formatToJSX(temp)) `;
+      `for (let i = 0; i < codeArr.length; i++) {
+        // Handle newlines, also terminate comment on newline, obviously
+        if (codeArr[i].match("\n")) {
+          codeArr[i] = codeArr[i].replace("\n", "");
+          commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
+            output.push(this.formatToJSX(codeArr[i]));
+          output.push(<br></br>);
+          commentFound = false;
+        }
+        // It does this while commentFound <-
+        else if (commentFound) {
+          output.push(this.addTag(false, "comm", codeArr[i]));
+        }
+        // It flips commentFound if it found this <-
+        else if (codeArr[i].match("//")) { 
+          commentFound = true;
+          output.push(this.addTag('comm'));
+        } else {
+          // Matches isolated words
+          if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
+            keyfound = false;
+            word = codeArr[i];
+  
+            // Assign <syn> tag depending on keyword, var name, etc.
+            for (let j = 0; j < Muh.keywords.length; j++) {
+              if (word === Muh.keywords[j]) {
+                // temporarily give all keywords "if" tag
+                keyfound = true;
+                output.push(this.addTag(false, "if", word));
+              }
+            }
+            // not a keyword
+            if (!keyfound) {
+              output.push(this.addTag(false, "variable", word));
+            }
+  
+            //output.push(" ");
+            // Matches words preceding symbols
+          } else if (
+            codeArr[i].match(/^\w*(?=\W)/) != "" &&
+            codeArr[i].match(/^\w*(?=\W)/) != null
+          ) {
+            word = codeArr[i].match(/^\w*/)[0];
+            output.push(this.addTag(false, "func", word));
+            codeArr[i] = codeArr[i].replace(/^\w*/, "");
+            output.push(this.formatToJSX(codeArr[i]));`
 
     return (
       <div className="theCode">
-        {this.aNiceJSXArray(someCode)} <br></br>
-        <NeatStuff />
+        {this.aNiceJSXArray(someCode)}
+        {this.theObj}
       </div>
     );
   }
