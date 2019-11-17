@@ -106,128 +106,133 @@ class ACodeParser extends React.Component {
     let keyfound;
     let commentFound = false;
 
+    let aSpace = () => <syn className="space">{" "}</syn>;
+
     // JSX objects pushed to here in order
     let output = [];
     
     for (let i = 0; i < codeArr.length; i++) {
-      // Handle newlines, also terminate comment on newline, obviously
-      if (codeArr[i].match(/[^\S]*\n$/)) {
-        codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
-        commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
-          output.push(this.formatToJSX(codeArr[i]));
-        output.push(<br></br>);
-        commentFound = false;
-      }
-      // It does this while commentFound <-
-      else if (commentFound) {
-        output.push(this.addTag(false, "comm", codeArr[i]));
-      }
-      // It flips commentFound if it found this <-
-      else if (codeArr[i].match(/^\/{2,}/)) { 
-        commentFound = true;
-        output.push(this.addTag(false, 'comm', codeArr[i]));
+      // Handle tabs
+      if (codeArr[i] === "") {
+        output.push(aSpace());
       } else {
-        // Matches isolated words
-        if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
-          keyfound = false;
-          word = codeArr[i];
+        // Handle newlines, also terminate comment on newline, obviously
+        if (codeArr[i].match(/[^\S]*\n$/)) {
+          codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
+          commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
+            output.push(this.formatToJSX(codeArr[i]));
+          output.push(<br></br>);
+          commentFound = false;
+        }
+        // It does this while commentFound <-
+        else if (commentFound) {
+          output.push(this.addTag(false, "comm", codeArr[i]));
+        }
+        // It flips commentFound if it found this <-
+        else if (codeArr[i].match(/^\/{2,}/)) {
+          commentFound = true;
+          output.push(this.addTag(false, 'comm', codeArr[i]));
+        } else {
+          // Matches isolated words
+          if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
+            keyfound = false;
+            word = codeArr[i];
 
-          // Assign <syn> tag depending on keyword, var name, etc.
-          for (let j = 0; j < Muh.keywords.length; j++) {
-            if (word === Muh.keywords[j]) {
-              // temporarily give all keywords "if" tag
-              keyfound = true;
-              output.push(this.addTag(false, "if", word));
+            // Assign <syn> tag depending on keyword, var name, etc.
+            for (let j = 0; j < Muh.keywords.length; j++) {
+              if (word === Muh.keywords[j]) {
+                // temporarily give all keywords "if" tag
+                keyfound = true;
+                output.push(this.addTag(false, "if", word));
+              }
             }
-          }
-          // not a keyword
-          if (!keyfound) {
-            output.push(this.addTag(false, "variable", word));
-          }
+            // not a keyword
+            if (!keyfound) {
+              output.push(this.addTag(false, "variable", word));
+            }
 
-          //output.push(" ");
-          // Matches words preceding symbols
-        } else if (
-          codeArr[i].match(/^\w*(?=\W)/) != "" &&
-          codeArr[i].match(/^\w*(?=\W)/) != null
-        ) {
-          word = codeArr[i].match(/^\w*/)[0];
-          output.push(this.addTag(false, "func", word));
-          codeArr[i] = codeArr[i].replace(/^\w*/, "");
-          output.push(this.formatToJSX(codeArr[i]));
+            //output.push(" ");
+            // Matches words preceding symbols
+          } else if (
+            codeArr[i].match(/^\w*(?=\W)/) != "" &&
+            codeArr[i].match(/^\w*(?=\W)/) != null
+          ) {
+            word = codeArr[i].match(/^\w*/)[0];
+            output.push(this.addTag(false, "func", word));
+            codeArr[i] = codeArr[i].replace(/^\w*/, "");
+            output.push(this.formatToJSX(codeArr[i]));
 
-          // Matches symbols
-        } else if (codeArr[i].match(/^\W/)) {
-          // Multiple symbols
-          // Decompose and send back
-          if (codeArr[i].match(/^\W{2,}/)) {
-            symbols = codeArr[i]
-              .match(/^\W{2,}/)[0]
-              .split("")
-              .join(" ");
-            codeArr[i] = codeArr[i].replace(/^\W{2,}/, "");
-            symbols = symbols + " " + codeArr[i];
-            output.push(this.formatToJSX(symbols));
+            // Matches symbols
+          } else if (codeArr[i].match(/^\W/)) {
+            // Multiple symbols
+            // Decompose and send back
+            if (codeArr[i].match(/^\W{2,}/)) {
+              symbols = codeArr[i]
+                .match(/^\W{2,}/)[0]
+                .split("")
+                .join(" ");
+              codeArr[i] = codeArr[i].replace(/^\W{2,}/, "");
+              symbols = symbols + " " + codeArr[i];
+              output.push(this.formatToJSX(symbols));
 
-            // Decompose
-          } else {
-            // Single symbols followed by alphanumeric character
-            if (codeArr[i].match(/^\W(?=\w)/)) {
-              temp = codeArr[i].match(/^\W/)[0];
-              codeArr[i] = codeArr[i].replace(/^\W/, "");
-              temp = temp + " " + codeArr[i];
-              output.push(this.formatToJSX(temp));
-
-              // Singleton symbols processed here
-              // Assign a JSX object to each non-alphanumeric symbol
+              // Decompose
             } else {
-              switch (codeArr[i]) {
-                case ";":
-                  output.push(this.addTag("semic"));
-                  break;
-                case "(":
-                  output.push(this.addTag("lparen"));
-                  break;
-                case ")":
-                  output.push(this.addTag("rparen"));
-                  break;
-                case "{":
-                  output.push(this.addTag("lbrack"));
-                  break;
-                case "}":
-                  output.push(this.addTag("rbrack"));
-                  break;
-                case ".":
-                  output.push(this.addTag("dot"));
-                  break;
-                case "[":
-                  output.push(this.addTag('lsq'));
-                  break;
-                case "]":
-                  output.push(this.addTag('rsq'));
-                  break;
-                case "=":
-                  output.push(this.addTag('eq'));
-                  break;
-                case "+":
-                  output.push(this.addTag('plus'));
-                  break;
-                case "'":
-                  output.push(this.addTag('squote'));
-                  break;
-                case '"':
-                  output.push(this.addTag('dquote'));
-                  break;
-                default:
-                  // currently changes everything to semicolons, correct this later
-                  output.push(this.addTag(false, "comm", codeArr[i]));
-                  break;
+              // Single symbols followed by alphanumeric character
+              if (codeArr[i].match(/^\W(?=\w)/)) {
+                temp = codeArr[i].match(/^\W/)[0];
+                codeArr[i] = codeArr[i].replace(/^\W/, "");
+                temp = temp + " " + codeArr[i];
+                output.push(this.formatToJSX(temp));
+
+                // Singleton symbols processed here
+                // Assign a JSX object to each non-alphanumeric symbol
+              } else {
+                switch (codeArr[i]) {
+                  case ";":
+                    output.push(this.addTag("semic"));
+                    break;
+                  case "(":
+                    output.push(this.addTag("lparen"));
+                    break;
+                  case ")":
+                    output.push(this.addTag("rparen"));
+                    break;
+                  case "{":
+                    output.push(this.addTag("lbrack"));
+                    break;
+                  case "}":
+                    output.push(this.addTag("rbrack"));
+                    break;
+                  case ".":
+                    output.push(this.addTag("dot"));
+                    break;
+                  case "[":
+                    output.push(this.addTag('lsq'));
+                    break;
+                  case "]":
+                    output.push(this.addTag('rsq'));
+                    break;
+                  case "=":
+                    output.push(this.addTag('eq'));
+                    break;
+                  case "+":
+                    output.push(this.addTag('plus'));
+                    break;
+                  case "'":
+                    output.push(this.addTag('squote'));
+                    break;
+                  case '"':
+                    output.push(this.addTag('dquote'));
+                    break;
+                  default:
+                    output.push(this.addTag(false, "default", codeArr[i]));
+                    break;
+                }
               }
             }
           }
         }
       }
-      //output.push(" ");
     }
 
     //console.log(spaces);
