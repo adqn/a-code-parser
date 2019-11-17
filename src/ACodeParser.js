@@ -1,7 +1,6 @@
 import React from 'react';
 import NeatStuff from './NeatStuff'
 import './css/syntax.css';
-import { AST_PropAccess } from 'terser';
 
 let Muh = {
   keywords: [
@@ -124,9 +123,9 @@ class ACodeParser extends React.Component {
         output.push(this.addTag(false, "comm", codeArr[i]));
       }
       // It flips commentFound if it found this <-
-      else if (codeArr[i].match("//")) { 
+      else if (codeArr[i].match(/^\/{2,}/)) { 
         commentFound = true;
-        output.push(this.addTag('comm'));
+        output.push(this.addTag(false, 'comm', codeArr[i]));
       } else {
         // Matches isolated words
         if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
