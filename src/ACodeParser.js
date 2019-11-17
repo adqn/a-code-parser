@@ -111,8 +111,8 @@ class ACodeParser extends React.Component {
     
     for (let i = 0; i < codeArr.length; i++) {
       // Handle newlines, also terminate comment on newline, obviously
-      if (codeArr[i].match("\n")) {
-        codeArr[i] = codeArr[i].replace("\n", "");
+      if (codeArr[i].match(/[^\S]*\n$/)) {
+        codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
         commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
           output.push(this.formatToJSX(codeArr[i]));
         output.push(<br></br>);
@@ -220,7 +220,7 @@ class ACodeParser extends React.Component {
                   break;
                 default:
                   // currently changes everything to semicolons, correct this later
-                  output.push(this.addTag("semic"));
+                  output.push(this.addTag(false, "comm", codeArr[i]));
                   break;
               }
             }
@@ -244,7 +244,7 @@ class ACodeParser extends React.Component {
   }
 
   render() {
-    // Pretty much all prints except tabs and regexes
+    // Pretty much all prints except tabs and "\n" 
     let someCode =
       `for (let i = 0; i < codeArr.length; i++) {
         // Handle newlines, also terminate comment on newline, obviously
