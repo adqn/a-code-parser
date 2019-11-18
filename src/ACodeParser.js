@@ -2,11 +2,19 @@ import React from 'react';
 import NeatStuff from './NeatStuff'
 import './css/syntax.css';
 
-let Muh = {
+const Muh = {
   keywords: [
-    'if', 'for', 'var', 'let', 'const',
-    'while', 'function', 'switch', 'case',
-    'return'
+    'if',
+    'else',
+    'for',
+    'var',
+    'let',
+    'const',   
+    'while',
+    'function',
+    'switch',
+    'case',
+    'return',
   ]
 }
 
@@ -26,7 +34,8 @@ class ACodeParser extends React.Component {
   // Give us a clean array of JSX objects
   unfckObj(inputObj) {
     for (let i = 0; i < inputObj.length; i++) {
-      inputObj[i].length > 1 ? this.unfckObj(inputObj[i]) : (this.tempObj.push(inputObj[i]));
+      inputObj[i].length > 1 ? this.unfckObj(inputObj[i]) :
+        (this.tempObj.push(inputObj[i]));
     }
   }
 
@@ -42,7 +51,7 @@ class ACodeParser extends React.Component {
 
     for (let i = 0; i < inputObj.length; i++) {
       if (inputObj[i].props != undefined) {
-        // Not necessarily functions, just objects of the form "word$symbols"
+        // Not necessarily functions, just objects of the form "^[word][symbols]$"
         inputObj[i].props.className === "func" ? output.push(inputObj[i]) :
           output.push(inputObj[i], aSpace())
       } else {
@@ -99,14 +108,23 @@ class ACodeParser extends React.Component {
 
   // The TRUE AND HONEST matching function
   formatToJSX(code) {
-    let codeArr = code.split(" ");
+    let codeArr;
     let temp;
     let word;
     let symbols;
     let keyfound;
     let commentFound = false;
 
-    let aSpace = () => <syn className="space">{" "}</syn>;
+    let aTab = () => <syn className="space">{"  "}</syn>;
+    
+    // lol
+    code = code.split(" ")
+    for (let i = 0; i < code.length; i++) {
+      if (code[i].match(/\\/g)) {
+        code[i] = code[i].replace(/\\/g, 'w$&');
+      }
+    }
+    codeArr = code;
 
     // JSX objects pushed to here in order
     let output = [];
@@ -114,7 +132,7 @@ class ACodeParser extends React.Component {
     for (let i = 0; i < codeArr.length; i++) {
       // Handle tabs
       if (codeArr[i] === "") {
-        output.push(aSpace());
+        output.push(aTab());
       } else {
         // Handle newlines, also terminate comment on newline, obviously
         if (codeArr[i].match(/[^\S]*\n$/)) {
@@ -123,6 +141,10 @@ class ACodeParser extends React.Component {
             output.push(this.formatToJSX(codeArr[i]));
           output.push(<br></br>);
           commentFound = false;
+        // Handle just \n lol
+        } else if (codeArr[i].match(/[^\S]*\n[^\S]*/)) {
+          codeArr[i] = codeArr[i].replace(/[^\S]*\n[^\S]*/, "$N");
+          output.push(this.formatToJSX(codeArr[i]));
         }
         // It does this while commentFound <-
         else if (commentFound) {
@@ -151,7 +173,6 @@ class ACodeParser extends React.Component {
               output.push(this.addTag(false, "variable", word));
             }
 
-            //output.push(" ");
             // Matches words preceding symbols
           } else if (
             codeArr[i].match(/^\w*(?=\W)/) != "" &&
@@ -187,6 +208,10 @@ class ACodeParser extends React.Component {
                 // Singleton symbols processed here
                 // Assign a JSX object to each non-alphanumeric symbol
               } else {
+                // I am going to break this entire class trying to catch the backslashes
+                if (codeArr[i].match(/\\/)) {
+                  output.push(this.addTag(false, 'default', "w"));
+                }
                 switch (codeArr[i]) {
                   case ";":
                     output.push(this.addTag("semic"));
@@ -224,6 +249,9 @@ class ACodeParser extends React.Component {
                   case '"':
                     output.push(this.addTag('dquote'));
                     break;
+                  case "\\\\":
+                    output.push(this.addTag(false, "default", "w"))
+                    break;
                   default:
                     output.push(this.addTag(false, "default", codeArr[i]));
                     break;
@@ -252,56 +280,63 @@ class ACodeParser extends React.Component {
     // Pretty much all prints except tabs and "\n" 
     let someCode =
       `for (let i = 0; i < codeArr.length; i++) {
-        // Handle newlines, also terminate comment on newline, obviously
-        if (codeArr[i].match("\n")) {
-          codeArr[i] = codeArr[i].replace("\n", "");
-          commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
-            output.push(this.formatToJSX(codeArr[i]));
-          output.push(<br></br>);
-          commentFound = false;
-        }
-        // It does this while commentFound <-
-        else if (commentFound) {
-          output.push(this.addTag(false, "comm", codeArr[i]));
-        }
-        // It flips commentFound if it found this <-
-        else if (codeArr[i].match("//")) { 
-          commentFound = true;
-          output.push(this.addTag('comm'));
+        // Handle tabs
+        if (codeArr[i] === "") {
+          output.push(aSpace());
         } else {
-          // Matches isolated words
-          if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
-            keyfound = false;
-            word = codeArr[i];
+          // Handle newlines, also terminate comment on newline, obviously
+          if (codeArr[i].match(/[^\S]*\n$/)) {
+            codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
+            commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
+              output.push(this.formatToJSX(codeArr[i]));
+            output.push(<br></br>);
+            commentFound = false;
+          }
+          // It does this while commentFound <-
+          else if (commentFound) {
+            output.push(this.addTag(false, "comm", codeArr[i]));
+          }
+          // It flips commentFound if it found this <-
+          else if (codeArr[i].match(/^\/{2,}/)) {
+            commentFound = true;
+            output.push(this.addTag(false, 'comm', codeArr[i]));
+          } else {
+            // Matches isolated words
+            if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
+              keyfound = false;
+              word = codeArr[i];
   
-            // Assign <syn> tag depending on keyword, var name, etc.
-            for (let j = 0; j < Muh.keywords.length; j++) {
-              if (word === Muh.keywords[j]) {
-                // temporarily give all keywords "if" tag
-                keyfound = true;
-                output.push(this.addTag(false, "if", word));
+              // Assign <syn> tag depending on keyword, var name, etc.
+              for (let j = 0; j < Muh.keywords.length; j++) {
+                if (word === Muh.keywords[j]) {
+                  // temporarily give all keywords "if" tag
+                  keyfound = true;
+                  output.push(this.addTag(false, "if", word));
+                }
               }
-            }
-            // not a keyword
-            if (!keyfound) {
-              output.push(this.addTag(false, "variable", word));
-            }
+              // not a keyword
+              if (!keyfound) {
+                output.push(this.addTag(false, "variable", word));
+              }
   
-            //output.push(" ");
-            // Matches words preceding symbols
-          } else if (
-            codeArr[i].match(/^\w*(?=\W)/) != "" &&
-            codeArr[i].match(/^\w*(?=\W)/) != null
-          ) {
-            word = codeArr[i].match(/^\w*/)[0];
-            output.push(this.addTag(false, "func", word));
-            codeArr[i] = codeArr[i].replace(/^\w*/, "");
-            output.push(this.formatToJSX(codeArr[i]));`
+              //output.push(" ");
+              // Matches words preceding symbols
+            } else if (
+              codeArr[i].match(/^\w*(?=\W)/) != "" &&
+              codeArr[i].match(/^\w*(?=\W)/) != null
+            ) {
+              word = codeArr[i].match(/^\w*/)[0];
+              output.push(this.addTag(false, "func", word));
+              codeArr[i] = codeArr[i].replace(/^\w*/, "");
+              output.push(this.formatToJSX(codeArr[i]));
+  `
 
     return (
-      <div className="theCode">
-        {this.aNiceJSXArray(someCode)}
-        {this.theObj}
+      <div>
+        <div className="theCode">
+          {this.aNiceJSXArray(someCode)}
+          {this.theObj}
+        </div>
       </div>
     );
   }
