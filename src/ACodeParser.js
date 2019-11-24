@@ -142,7 +142,7 @@ class ACodeParser extends React.Component {
           commentFound = false;
         // Handle just \n lol
         } else if (codeArr[i].match(/[^\S]*\n[^\S]*/)) {
-          codeArr[i] = codeArr[i].replace(/[^\S]*\n[^\S]*/, "$N");
+          codeArr[i] = codeArr[i].replace(/[^\S]*\n[^\S]*/, "\\n");
           output.push(this.formatToJSX(codeArr[i]));
         }
         // It does this while commentFound <-
