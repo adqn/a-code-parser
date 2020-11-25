@@ -132,7 +132,7 @@ class ACodeParser extends React.Component {
       if (codeArr[i] === "\t") {
         output.push(aTab());
       } else {
-        // Handle newlines, also terminate comment on newline, obviously
+        // Handle newlines, also terminate comment on newline
         if (codeArr[i].match(/[^\S]*\n$/)) {
           codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
           commentFound ? output.push(aSynTag(codeArr[i], "comm")) :
@@ -276,60 +276,6 @@ class ACodeParser extends React.Component {
   }
 
   render() {
-    // Pretty much all prints except tabs and "\n" 
-    let someCode =
-      `for (let i = 0; i < codeArr.length; i++) {
-        // Handle tabs
-        if (codeArr[i] === "") {
-          output.push(aSpace());
-        } else {
-          // Handle newlines, also terminate comment on newline, obviously
-          if (codeArr[i].match(/[^\S]*\n$/)) {
-            codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
-            commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
-              output.push(this.formatToJSX(codeArr[i]));
-            output.push(<br></br>);
-            commentFound = false;
-          }
-          // It does this while commentFound <-
-          else if (commentFound) {
-            output.push(this.addTag(false, "comm", codeArr[i]));
-          }
-          // It flips commentFound if it found this <-
-          else if (codeArr[i].match(/^\/{2,}/)) {
-            commentFound = true;
-            output.push(this.addTag(false, 'comm', codeArr[i]));
-          } else {
-            // Matches isolated words
-            if (codeArr[i].match(/^[^\W]\w*[^\W]*$/)) {
-              keyfound = false;
-              word = codeArr[i];
-  
-              // Assign <syn> tag depending on keyword, var name, etc.
-              for (let j = 0; j < Muh.keywords.length; j++) {
-                if (word === Muh.keywords[j]) {
-                  // temporarily give all keywords "if" tag
-                  keyfound = true;
-                  output.push(this.addTag(false, "if", word));
-                }
-              }
-              // not a keyword
-              if (!keyfound) {
-                output.push(this.addTag(false, "variable", word));
-              }
-  
-              //output.push(" ");
-              // Matches words preceding symbols
-            } else if (
-              codeArr[i].match(/^\w*(?=\W)/) != "" &&
-              codeArr[i].match(/^\w*(?=\W)/) != null
-            ) {
-              word = codeArr[i].match(/^\w*/)[0];
-              output.push(this.addTag(false, "func", word));
-              codeArr[i] = codeArr[i].replace(/^\w*/, "");
-              output.push(this.formatToJSX(codeArr[i]));
-  `
-
     return (
       <div>
         <div className="theCode">
