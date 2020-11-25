@@ -130,7 +130,6 @@ class ACodeParser extends React.Component {
     for (let i = 0; i < codeArr.length; i++) {
       // Handle tabs
       if (codeArr[i] === "\t") {
-
         output.push(aTab());
       } else {
         // Handle newlines, also terminate comment on newline, obviously
