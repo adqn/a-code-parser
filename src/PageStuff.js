@@ -2,7 +2,7 @@ import React from 'react';
 import ACodeParser from './ACodeParser'
 import './css/document.css';
 
-class PageStuff extends React.Component {
+class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -60,21 +60,6 @@ class InputForm extends React.Component {
     const { inputCode, formCode } = this.state;
     const { handleCode, passCode } = this;
 
-    let someCode =
-    `for (let i = 0; i < codeArr.length; i++) {
-      // Handle tabs
-      if (codeArr[i] === "") {
-        output.push(aSpace());
-      } else {
-        // Handle newlines, also terminate comment on newline, obviously
-        if (codeArr[i].match(/[^\S]*\n$/)) {
-          codeArr[i] = codeArr[i].replace(/[^\S]*\n$/, "");
-          commentFound ? output.push(this.addTag(false, "comm", codeArr[i])) :
-            output.push(this.formatToJSX(codeArr[i]));
-          output.push(<br></br>);
-          commentFound = false;
-        }
-`
     return (
       <div>
         <ACodeParser code={inputCode} />
@@ -85,7 +70,6 @@ class InputForm extends React.Component {
       </div>
     );
   }
-  
 }
 
-export default PageStuff;
+export default App;
