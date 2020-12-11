@@ -2,7 +2,7 @@ import React from 'react';
 import NeatStuff from './NeatStuff'
 import './css/syntax.css';
 
-const Muh = {
+const reservedWords = {
   keywords: [
     'if',
     'else',
@@ -159,8 +159,8 @@ class ACodeParser extends React.Component {
             word = codeArr[i];
 
             // Assign <syn> tag depending on keyword, var name, etc.
-            for (let j = 0; j < Muh.keywords.length; j++) {
-              if (word === Muh.keywords[j]) {
+            for (let j = 0; j < reservedWords.keywords.length; j++) {
+              if (word === reservedWords.keywords[j]) {
                 // temporarily give all keywords "if" tag
                 keyfound = true;
                 output.push(aSynTag(word, "if"));
