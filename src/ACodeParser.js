@@ -18,7 +18,7 @@ const reservedWords = {
   ]
 }
 
-// Return formatted code stuff I think
+// Return formatted code 
 // Checking for [code] tag performed in parent component
 class ACodeParser extends React.Component {
   constructor(props) {
@@ -40,8 +40,6 @@ class ACodeParser extends React.Component {
   }
 
   // Return a proper array of JSX objects with spaces replinished
-  // Meant to undo the horror I wrought upon the innocent code string
-  // This is pretty terrible itself though
   restoreSpace(inputObj = false) {
     let output = [];
     let tempObj

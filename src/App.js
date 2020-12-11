@@ -65,7 +65,7 @@ class InputForm extends React.Component {
         <ACodeParser code={inputCode} />
           <div className="InputForm">
             <textarea value={formCode} onChange={handleCode}></textarea>
-            <button onClick={passCode}>do stuff</button>
+            <button onClick={passCode}>Parse code</button>
           </div>
       </div>
     );
